@@ -1,5 +1,5 @@
-use std::cell::RefCell;
-use std::sync::mpsc::{Receiver, SyncSender, SendError, TryRecvError, RecvError};
+
+use std::sync::mpsc::{Receiver, SyncSender};
 use std::sync::{mpsc, Mutex, Arc};
 use std::time::{Duration, Instant};
 
@@ -45,7 +45,7 @@ pub struct Server<> {
 impl Server {
     pub fn new(opts: ServerOpts) -> Server {
         Server {
-            opts: opts,
+            opts,
             rpc_ch: Channel::new(),
             quit_ch: Channel::new(),
         }

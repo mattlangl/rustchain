@@ -1,8 +1,8 @@
 use std::any::Any;
 use std::collections::HashMap;
-use std::error::Error;
+
 use std::sync::{Arc, Mutex, RwLock};
-use std::sync::mpsc::{Receiver, Sender};
+use std::sync::mpsc::{Receiver};
 
 use super::server::Channel;
 use super::transport::{NetAddr, RPC, Transport};
@@ -17,7 +17,7 @@ pub struct LocalTransport {
 impl LocalTransport {
     pub fn new(addr: NetAddr) -> Self {
         Self {
-            addr: addr,
+            addr,
             chan: Channel::new(),
             peers: Arc::new(RwLock::new(HashMap::new()))
         }
@@ -26,13 +26,13 @@ impl LocalTransport {
 
 impl Transport for LocalTransport {
     fn consume(&self) -> Arc<Mutex<Receiver<RPC>>> {
-        return self.chan.receiver();
+        self.chan.receiver()
     }
 
     fn connect(&mut self, transport: &dyn Transport) -> Result<(), String> {
         let local_transport: &LocalTransport = transport.as_any().downcast_ref().expect("not local transport");
         let addr = local_transport.addr();
-        self.peers.write().unwrap().insert(addr, local_transport.clone().to_owned());
+        self.peers.write().unwrap().insert(addr, local_transport.clone());
         Ok(())
     }
 
@@ -48,12 +48,12 @@ impl Transport for LocalTransport {
             payload,
         }) {
             Ok(x) => Ok(x),
-            Err(x) => Err("error sending".to_owned()),
+            Err(_x) => Err("error sending".to_owned()),
         }
     }
 
     fn addr(&self) -> NetAddr {
-        return self.addr.clone();
+        self.addr.clone()
     }
 
     fn as_any(&self) -> &dyn Any {

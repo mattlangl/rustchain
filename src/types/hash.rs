@@ -1,5 +1,5 @@
-use byteorder::{WriteBytesExt, LittleEndian, ReadBytesExt};
-use rand::{RngCore, thread_rng, Rng};
+use byteorder::{WriteBytesExt, ReadBytesExt};
+use rand::{thread_rng, Rng};
 use std::{fmt, io};
 use std::io::{Write, Read};
 use std::iter::repeat;
@@ -53,7 +53,7 @@ impl Hash {
     }
 
     pub fn to_string(&self) -> String {
-        hex::encode(&self.0)
+        hex::encode(self.0)
     }
 
     pub fn random() -> Self {
