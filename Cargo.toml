@@ -10,5 +10,8 @@ byteorder = "1.4.3"
 bytes = "1.4.0"
 chrono = "0.4.23"
 hex = "0.4.3"
+p256 = { version = "0.12.0", features = ["pem"] }
 rand = "0.8.5"
 sha2 = "0.10.6"
+encode-decode-derive = {path = "encode-decode-derive" }
+syn = "1.0.108"

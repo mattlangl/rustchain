@@ -5,6 +5,7 @@ use network::{local_transport::LocalTransport, transport::Transport, server::{Se
 mod network;
 mod core;
 mod types;
+mod crypto;
 
 fn main() {
     let mut trLocal = LocalTransport::new("LOCAL".to_owned());
