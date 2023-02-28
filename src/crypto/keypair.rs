@@ -66,9 +66,9 @@ impl PublicKey {
 
 #[cfg(test)]
 mod test {
-    use crate::types::hash::Hash;
+    
     use super::*;
-    use std::io::Cursor;
+    
 
     #[test]
     fn test_keypair_sign_verify_success() {

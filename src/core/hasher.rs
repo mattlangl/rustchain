@@ -2,7 +2,7 @@ use sha2::{Sha256, Digest};
 
 use crate::types::hash::Hash;
 
-use super::{block::{Block, Header}, encoding::{Encode, Encoder, HeaderEncoder}};
+use super::{block::{Block}, encoding::{Encode, HeaderEncoder}};
 
 pub trait Hasher<T> {
     fn hash(obj: T) -> Result<Hash, String>;

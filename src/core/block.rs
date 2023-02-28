@@ -1,5 +1,5 @@
-use std::{io::{self, Write, Read, Cursor}, error::Error};
-use byteorder::{LittleEndian, WriteBytesExt, ReadBytesExt};
+use std::{io::{self, Write, Read, Cursor}};
+
 use encode_decode_derive::{Encode, Decode};
 use p256::ecdsa::Signature;
 use sha2::{Sha256, Digest};

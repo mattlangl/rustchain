@@ -1,4 +1,4 @@
-use std::{io::{self, Write, Read, ErrorKind, Error}};
+use std::{io::{Write, Read}};
 
 use encode_decode_derive::{Encode, Decode};
 use p256::ecdsa::Signature;

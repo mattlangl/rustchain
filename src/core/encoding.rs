@@ -29,7 +29,7 @@ impl HeaderEncoder {
 impl Encoder<Header> for HeaderEncoder {
 
 
-    fn encode<W: Write>(&self, writer: W, h: &Header) -> Result<()> {
+    fn encode<W: Write>(&self, _writer: W, _h: &Header) -> Result<()> {
         Ok(())
     }
 }
@@ -43,7 +43,7 @@ impl HeaderDecoder {
 }
 
 impl Decoder<Header> for HeaderDecoder {
-    fn decode<R: Read>(&self, reader: R) -> Result<Box<Header>> {
+    fn decode<R: Read>(&self, _reader: R) -> Result<Box<Header>> {
         todo!()
     }
 }
