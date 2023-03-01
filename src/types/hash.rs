@@ -40,9 +40,7 @@ impl Hash {
     }
 
     pub fn from_bytes(b: &[u8]) -> Result<Self, String> {
-        println!("conv part");
         if b.len() != 32 {
-            println!("wrong len");
             return Err(format!("given bytes with length {} should be 32", b.len()));
         }
 

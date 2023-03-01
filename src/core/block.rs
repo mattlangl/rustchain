@@ -1,5 +1,6 @@
 use std::{io::{self, Write, Read, Cursor}};
 
+use chrono::Utc;
 use encode_decode_derive::{Encode, Decode};
 use p256::ecdsa::Signature;
 use sha2::{Sha256, Digest};
@@ -7,17 +8,17 @@ use crate::{types::hash::Hash, crypto::keypair::{PublicKey, PrivateKey}};
 
 use super::{transaction::{Transaction}, encoding::{Encoder, Decoder, Encode, Decode, HeaderEncoder}};
 
-#[derive(Debug, PartialEq, Eq, Encode, Decode)]
+#[derive(Debug, PartialEq, Eq, Encode, Decode, Clone, Copy)]
 pub struct Header {
     pub version: u32,
-    pub data: Hash,
+    pub data: Option<Hash>,
     pub prev_block: Hash,
     pub timestamp: i64,
     pub height: u32,
 }
 
 
-#[derive(Debug, PartialEq, Decode, Encode)]
+#[derive(Debug, PartialEq, Decode, Encode, Clone)]
 pub struct Block {
     pub header: Header,
     pub transactions: Vec<Transaction>,
@@ -43,6 +44,33 @@ impl Block {
             validator: None,
         }
     }
+
+
+    pub fn random_block(h: u32) -> Self {
+        let header = Header {
+            version: 1,
+            data: None,
+            prev_block: Hash::random(),
+            timestamp: Utc::now().timestamp(),
+            height: h,
+        };
+        let tx = Transaction {
+            data: br#"foo"#.to_vec(),
+            key: None,
+            signature: None,
+        };
+
+        Block::new(header, vec![tx])
+    }
+
+    pub fn random_block_with_signature(h: u32) -> Self {
+        let key = PrivateKey::generate_key();
+        let mut b = Self::random_block(h);
+        assert!(b.sign(key).is_ok());
+    
+        return b
+    }
+    
 
     pub fn hash(&mut self) -> Hash {
         if self.hash.is_zero() {
@@ -152,5 +180,40 @@ mod test {
     //     let h = b.hash();
     //     assert!(!h.is_zero());
     // }
+
+    use std::time::{self, SystemTime};
+
+    use crate::{crypto::{self, keypair::PrivateKey}, types::hash::Hash, core::transaction::Transaction};
+
+    use super::{Block, Header};
+
+    use chrono::{Utc};
+
+
+    #[test]
+    fn test_sign_block() {
+        let key = PrivateKey::generate_key();
+        let mut b = Block::random_block(0);
+        assert!(b.sign(key).is_ok());
+        assert!(b.signature.is_some());
+    }
+
+    #[test]
+    fn test_verify_block() {
+        let key = PrivateKey::generate_key();
+        let mut b = Block::random_block(0);
+        assert!(b.sign(key).is_ok());
+        assert!(b.verify().is_ok());
+
+        let other_key = PrivateKey::generate_key();
+        let old_validator = b.validator;
+        b.validator = Some(other_key.generate_public());
+        assert!(b.verify().is_err());
+        b.validator = old_validator;
+        b.header.height = 100;
+
+        assert!(b.verify().is_err());
+
+    }
 
 }

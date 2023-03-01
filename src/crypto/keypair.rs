@@ -11,7 +11,7 @@ use sha2::{Digest, Sha256};
 
 use crate::types::address::Address;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct PrivateKey {
     key: String
 }
@@ -37,7 +37,7 @@ impl PrivateKey {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct PublicKey {
     key: P256PublicKey
 }

@@ -1,13 +1,15 @@
 use std::io::{Write, Read, Result};
 
+use byteorder::{LittleEndian, WriteBytesExt};
+
 use super::block::Header;
 
 pub trait Encoder<T: ?Sized> {
-    fn encode<W: Write>(&self, writer: W, t: &T) -> Result<()>;
+    fn encode<W: Write>(&self, writer: &mut W, t: &T) -> Result<()>;
 }
 
 pub trait Decoder<T: ?Sized> {
-    fn decode<R: Read>(&self, reader: R) -> Result<Box<T>>;
+    fn decode<R: Read>(&self, reader:  &mut R) -> Result<Box<T>>;
 }
 
 pub trait Encode {
@@ -29,7 +31,11 @@ impl HeaderEncoder {
 impl Encoder<Header> for HeaderEncoder {
 
 
-    fn encode<W: Write>(&self, _writer: W, _h: &Header) -> Result<()> {
+    fn encode<W: Write>(&self, writer: &mut W, h: &Header) -> Result<()> {
+        writer.write_u32::<LittleEndian>(h.version)?;
+        // self.prev_block.encode_binary(writer)?;
+        writer.write_i64::<LittleEndian>(h.timestamp)?;
+        writer.write_u32::<LittleEndian>(h.height)?;
         Ok(())
     }
 }
@@ -43,7 +49,7 @@ impl HeaderDecoder {
 }
 
 impl Decoder<Header> for HeaderDecoder {
-    fn decode<R: Read>(&self, _reader: R) -> Result<Box<Header>> {
+    fn decode<R: Read>(&self, _reader: &mut R) -> Result<Box<Header>> {
         todo!()
     }
 }
