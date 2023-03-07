@@ -6,15 +6,26 @@ use p256::ecdsa::Signature;
 use sha2::{Sha256, Digest};
 use crate::{types::hash::Hash, crypto::keypair::{PublicKey, PrivateKey}};
 
-use super::{transaction::{Transaction}, encoding::{Encoder, Decoder, Encode, Decode, HeaderEncoder}};
+use super::{transaction::{Transaction}, encoding::{Encoder, Decoder, Encode, Decode, HeaderEncoder}, hasher::{BlockHasher, Hasher}};
 
 #[derive(Debug, PartialEq, Eq, Encode, Decode, Clone, Copy)]
 pub struct Header {
     pub version: u32,
-    pub data: Option<Hash>,
+    pub data: Hash,
     pub prev_block: Hash,
     pub timestamp: i64,
     pub height: u32,
+}
+
+impl Header {
+    pub fn as_bytes(&self) -> Vec<u8> {
+        let encoder = HeaderEncoder::new();
+        let mut writer = Cursor::new(vec![]);
+
+        assert!(encoder.encode(&mut writer, self).is_ok());
+        writer.set_position(0);
+        writer.into_inner()
+    }
 }
 
 
@@ -24,43 +35,39 @@ pub struct Block {
     pub transactions: Vec<Transaction>,
     pub signature: Option<Signature>,
     pub validator: Option<PublicKey>,
-    pub hash: Hash, // Cached version of the header hash
+    pub hash: Option<Hash>, // Cached version of the header hash
+    pub prev_hash: Option<Hash>,
 }
 
 
 impl Block {
     pub fn new(header: Header, transactions: Vec<Transaction>) -> Block {
-        let mut buf = Vec::new();
-        let encoder = HeaderEncoder::new();
-        header.encode_binary(&mut buf, encoder).unwrap();
-        let mut hasher = Sha256::new();
-        hasher.update(buf);
-        let fin = hasher.finalize().to_vec();
         Block {
             header,
             transactions,
-            hash: Hash::from_bytes(&fin).expect("can't convert"),
+            hash: None,
             signature: None,
             validator: None,
+            prev_hash: None,
         }
+    }
+
+    pub fn add_transaction(&mut self, t: &Transaction) -> Result<(), ()> {
+        self.transactions.push(t.clone());
+        Ok(())
     }
 
 
     pub fn random_block(h: u32) -> Self {
         let header = Header {
             version: 1,
-            data: None,
+            data: Hash::random(),
             prev_block: Hash::random(),
             timestamp: Utc::now().timestamp(),
             height: h,
         };
-        let tx = Transaction {
-            data: br#"foo"#.to_vec(),
-            key: None,
-            signature: None,
-        };
 
-        Block::new(header, vec![tx])
+        Block::new(header, vec![])
     }
 
     pub fn random_block_with_signature(h: u32) -> Self {
@@ -68,33 +75,26 @@ impl Block {
         let mut b = Self::random_block(h);
         assert!(b.sign(key).is_ok());
     
-        return b
+        b
     }
     
 
-    pub fn hash(&mut self) -> Hash {
-        if self.hash.is_zero() {
-            let mut buf = Vec::new();
-            let encoder = HeaderEncoder::new();
-            self.header.encode_binary(&mut buf, encoder).unwrap();
-            let mut hasher = Sha256::new();
-            hasher.update(buf);
-            let fin = hasher.finalize().to_vec();
-            self.hash = Hash::from_bytes(&fin).expect("failed");
+    pub fn hash(&mut self, hasher: Box<dyn Hasher<Header>>) -> Hash {
+        if self.hash.is_none() {
+            self.hash = Some(hasher.hash(&self.header).expect("could not hash"));
         }
-
-        self.hash
+        self.hash.unwrap()
     }
 
-    pub fn header_data(&self) -> Result<Vec<u8>, io::Error> {
-        let encoder = HeaderEncoder::new();
-        let mut vec = Cursor::new(vec![]);
-        self.header.encode_binary(&mut vec, encoder).expect("couldn't encode header");
-        Ok(vec.get_ref().to_owned())
-    }
+    // pub fn header_data(&self) -> Result<Vec<u8>, io::Error> {
+    //     let encoder = HeaderEncoder::new();
+    //     let mut vec = Cursor::new(vec![]);
+    //     self.header.encode_binary(&mut vec, encoder).expect("couldn't encode header");
+    //     Ok(vec.get_ref().to_owned())
+    // }
 
     pub fn sign(&mut self, key: PrivateKey) -> Result<(), String> {
-        let header = self.header_data().unwrap();
+        let header = self.header.as_bytes();
         self.signature = Some(key.sign(&header).expect("could not sign"));
         self.validator = Some(key.generate_public());
         Ok(())
@@ -107,9 +107,13 @@ impl Block {
 
         let validator = self.validator.as_ref().unwrap();
         let signature = self.signature.unwrap();
-        let res = validator.verify(&self.header_data().unwrap(), &signature);
+        let res = validator.verify(&self.header.as_bytes(), &signature);
         if res.is_err() {
             return Err("Could not verify".to_owned());
+        }
+
+        for t in &self.transactions {
+            assert!(t.verify().is_ok());
         }
         Ok(())
     }
@@ -181,13 +185,13 @@ mod test {
     //     assert!(!h.is_zero());
     // }
 
-    use std::time::{self, SystemTime};
+    
 
-    use crate::{crypto::{self, keypair::PrivateKey}, types::hash::Hash, core::transaction::Transaction};
+    use crate::{crypto::{keypair::PrivateKey}};
 
-    use super::{Block, Header};
+    use super::{Block};
 
-    use chrono::{Utc};
+    
 
 
     #[test]
@@ -203,6 +207,7 @@ mod test {
         let key = PrivateKey::generate_key();
         let mut b = Block::random_block(0);
         assert!(b.sign(key).is_ok());
+        println!("{:?}", b);
         assert!(b.verify().is_ok());
 
         let other_key = PrivateKey::generate_key();

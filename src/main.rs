@@ -1,5 +1,5 @@
 use std::{time, thread};
-
+use simple_logger::SimpleLogger;
 use network::{local_transport::LocalTransport, transport::Transport, server::{ServerOpts, Server}};
 
 mod network;
@@ -8,22 +8,24 @@ mod types;
 mod crypto;
 
 fn main() {
-    let mut trLocal = LocalTransport::new("LOCAL".to_owned());
-    let mut trRemote = LocalTransport::new("REMOTE".to_owned());
+    SimpleLogger::new().with_threads(true).init().unwrap();
 
-    trLocal.connect(&trRemote);
+    let mut tr_local = LocalTransport::new("LOCAL".to_owned());
+    let mut tr_remote = LocalTransport::new("REMOTE".to_owned());
 
-    trRemote.connect(&trLocal);
+    tr_local.connect(&tr_remote);
+
+    tr_remote.connect(&tr_local);
 
     let sec = time::Duration::from_secs(1);
 
-    let localAddr = trLocal.addr();
+    let local_addr = tr_local.addr();
 
 
 
     thread::spawn(move || {
         loop {
-        trRemote.send_message(localAddr.clone() ,"Hello World".as_bytes().to_vec());
+        tr_remote.send_message(local_addr.clone() ,"Hello World".as_bytes().to_vec());
         thread::sleep(sec);
         }
     });
@@ -32,7 +34,7 @@ fn main() {
         transports: Vec::new(),
     };
 
-    opts.transports.push(Box::new(trLocal.clone()));
+    opts.transports.push(Box::new(tr_local.clone()));
 
     let server = Server::new(opts);
 

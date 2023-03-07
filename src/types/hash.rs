@@ -4,7 +4,7 @@ use std::{fmt, io};
 use std::io::{Write, Read};
 use std::iter::repeat;
 
-#[derive(Clone, Copy, Eq, PartialEq)]
+#[derive(Clone, Copy, Eq, PartialEq, Hash)]
 pub struct Hash([u8; 32]);
 
 impl Hash {
@@ -62,6 +62,7 @@ impl Hash {
             .collect::<Vec<u8>>();
         Hash::from_bytes(&bytes).unwrap()
     }
+
 }
 
 impl fmt::Debug for Hash {

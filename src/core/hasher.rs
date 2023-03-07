@@ -2,28 +2,44 @@ use sha2::{Sha256, Digest};
 
 use crate::types::hash::Hash;
 
-use super::{block::{Block}, encoding::{Encode, HeaderEncoder}};
+use super::{block::{Block, Header}, encoding::{Encode, HeaderEncoder}, transaction::Transaction};
 
 pub trait Hasher<T> {
-    fn hash(obj: T) -> Result<Hash, String>;
+    fn hash(&self, obj: &T) -> Result<Hash, String>;
 }
 
-struct BlockHasher {
+pub struct BlockHasher {
     // encoder: dyn Encoder<Header>
 }
 
-impl Hasher<Block> for BlockHasher {
-    fn hash(mut obj: Block) -> Result<Hash, String> {
-        if obj.hash.is_zero() {
-            let mut buf = Vec::new();
-            let encoder = HeaderEncoder::new();
-            obj.header.encode_binary(&mut buf, encoder).unwrap();    
-            let mut hasher = Sha256::new();
-            hasher.update(buf);
-            let fin = hasher.finalize().to_vec();
-            obj.hash = Hash::from_bytes(&fin).expect("failed");
-        }
+impl BlockHasher {
+    pub fn new() -> BlockHasher {
+        BlockHasher {}
+    }
+}
 
-        Ok(obj.hash)
+impl Hasher<Header> for BlockHasher {
+    fn hash(&self, obj: &Header) -> Result<Hash, String> {
+        let mut hasher = Sha256::new();
+        hasher.update(obj.as_bytes());
+        let h = hasher.finalize();
+        Hash::from_bytes(&h)
+    }
+}
+
+pub struct TxHasher {}
+
+impl TxHasher {
+    pub fn new() -> TxHasher {
+        TxHasher {}
+    }
+}
+
+impl Hasher<Transaction> for TxHasher {
+    fn hash(&self, obj: &Transaction) -> Result<Hash, String> {
+        let mut hasher = Sha256::new();
+        hasher.update(obj.data.clone());
+        let h = hasher.finalize();
+        Hash::from_bytes(&h)
     }
 }

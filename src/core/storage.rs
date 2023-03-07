@@ -13,7 +13,7 @@ impl MemoryStore {
 }
 
 impl Storage for MemoryStore {
-    fn put(&mut self, b: &Block) -> Result<(), ()> {
+    fn put(&mut self, _b: &Block) -> Result<(), ()> {
         Ok(())
     }
 }

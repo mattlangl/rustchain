@@ -4,7 +4,8 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex, RwLock};
 use std::sync::mpsc::{Receiver};
 
-use super::server::Channel;
+use crate::network::channel::Channel;
+
 use super::transport::{NetAddr, RPC, Transport};
 
 #[derive(Clone)]
