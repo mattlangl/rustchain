@@ -32,12 +32,13 @@ pub struct Server<> {
 impl Server {
     pub fn new(opts: ServerOpts) -> Server {
         Server {
-            opts,
             rpc_ch: Channel::new(),
             quit_ch: Channel::new(),
-            block_time: opts.block_time,
+            block_time: opts.block_time.clone(),
             pool: TxPool::new(),
             validator: opts.key.is_some(),
+            opts,
+
         }
     }
 
@@ -77,7 +78,7 @@ impl Server {
             return Err(Box::new(e));
         }
 
-        let hash = tx.hash(Box::new(TxHasher::new()));
+        let hash = tx.hash();
 
         if self.pool.has(hash.clone()) {
             info!("transaction already in mempool: hash={}", hash);

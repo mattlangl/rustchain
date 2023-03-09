@@ -2,7 +2,7 @@
 
 use std::sync::{RwLock, Arc};
 
-use crate::core::hasher::BlockHasher;
+use crate::core::hasher::Hasher;
 
 use super::{storage::{Storage, MemoryStore}, block::{Header, Block}, validator::{Validator, BlockValidator}};
 
@@ -66,7 +66,7 @@ impl Blockchain {
     pub fn add_block_without_validation(&mut self, b: &mut Block) -> Result<(), ()> {
         let mut bc = self.data.write().unwrap();
         let height = b.header.height;
-        log::info!("Adding block - height: {}, hash: {}", height, b.hash(Box::new(BlockHasher::new())));
+        log::info!("Adding block - height: {}, hash: {}", height, b.hash(Hasher::new()));
 
         bc.headers.push(b.header);
         bc.store.put(b)

@@ -1,16 +1,28 @@
-use std::{io::{Write, Read}};
-use encode_decode_derive::{Encode, Decode};
+use std::{io::{Write, Read, Cursor}};
 use p256::ecdsa::Signature;
+use serde::{Serialize, Deserialize};
 use crate::{types::hash::Hash, core::encoding::{Encode, Decode, Encoder, Decoder}, crypto::keypair::{PublicKey, PrivateKey}};
 
-use super::hasher::{TxHasher, Hasher};
+use super::hasher::{Hasher, Bytes};
 
-#[derive(Debug, PartialEq, Encode, Decode, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Transaction {
     pub data: Vec<u8>,
     pub key: Option<PublicKey>,
     pub signature: Option<Signature>,
     pub hash: Option<Hash>,
+    pub seen: Option<i64>,
+}
+
+impl Bytes for Transaction {
+    fn as_bytes(&self) -> Vec<u8> {
+        let writer = Cursor::new(vec![]);
+        let encoder = Encoder::new(&mut writer);
+
+        encoder.encode(self);
+        writer.set_position(0);
+        writer.into_inner()
+    }
 }
 
 impl Transaction {
@@ -20,6 +32,7 @@ impl Transaction {
             key: None,
             signature: None,
             hash: None,
+            seen: None,
         };
         Ok(tx)
     }
@@ -37,12 +50,22 @@ impl Transaction {
         self.key.as_ref().unwrap().verify(&self.data, self.signature.as_ref().unwrap())
     }
 
-    pub fn hash(&mut self, hasher: Box<dyn Hasher<Transaction>>) -> Hash {
+    pub fn hash(&mut self, hasher: Hasher) -> Hash 
+    {
         if self.hash.is_none() {
-            self.hash = Some(hasher.hash(&self).expect("could not hash"));
+            self.hash = Some(hasher.hash(*self).expect("could not hash"));
         }
         self.hash.unwrap()
     }
+
+    pub fn set_seen(&mut self, seen: i64) {
+        self.seen = Some(seen);
+    }
+
+    pub fn seen(&self) -> Option<i64> {
+        self.seen
+    }
+
 }
 
 #[cfg(test)]
@@ -59,6 +82,7 @@ mod test {
             key: None,
             signature: None,
             hash: None,
+            seen: None,
         };
 
         assert!(tx.sign(&key).is_ok());
@@ -75,6 +99,7 @@ mod test {
             key: None,
             signature: None,
             hash: None,
+            seen: None,
         };
 
         assert!(tx.sign(&key).is_ok());

@@ -1,55 +1,59 @@
-use std::io::{Write, Read, Result};
+use std::io::{Write, Read};
+use super::{block::{Block, Header}, transaction::Transaction};
 
-use byteorder::{LittleEndian, WriteBytesExt};
-
-use super::block::Header;
-
-pub trait Encoder<T: ?Sized> {
-    fn encode<W: Write>(&self, writer: &mut W, t: &T) -> Result<()>;
+pub struct Encoder<'a, W: Write> {
+    writer: &'a mut W
 }
 
-pub trait Decoder<T: ?Sized> {
-    fn decode<R: Read>(&self, reader:  &mut R) -> Result<Box<T>>;
-}
-
-pub trait Encode {
-    fn encode_binary<W: Write, E: Encoder<Self>>(&self, writer: &mut W, encoder: E) -> Result<()>;
-}
-
-pub trait Decode {
-    fn decode_binary<R: Read, D: Decoder<Self>>(writer: &mut R, decoder: D) -> Result<Box<Self>>;
-}
-
-pub struct HeaderEncoder {}
-
-impl HeaderEncoder {
-    pub fn new() -> Self {
-        HeaderEncoder {}
+impl <'a, W: Write>Encoder<'a, W> {
+    pub fn new(writer: &'a mut W) -> Self {
+        Encoder {
+            writer
+        }
     }
 }
 
-impl Encoder<Header> for HeaderEncoder {
+pub trait Encode<T> {
+    fn encode(&mut self, obj: &T);
+}
 
-
-    fn encode<W: Write>(&self, writer: &mut W, h: &Header) -> Result<()> {
-        writer.write_u32::<LittleEndian>(h.version)?;
-        // self.prev_block.encode_binary(writer)?;
-        writer.write_i64::<LittleEndian>(h.timestamp)?;
-        writer.write_u32::<LittleEndian>(h.height)?;
-        Ok(())
+impl <'a, W: Write>Encode<Block> for Encoder<'a, W> {
+    fn encode(&mut self, obj: &Block) {
+        ciborium::ser::into_writer( obj, &mut self.writer);
     }
 }
 
-pub struct HeaderDecoder {}
-
-impl HeaderDecoder {
-    pub fn new() -> Self {
-        HeaderDecoder {}
+impl <'a, W: Write>Encode<Header> for Encoder<'a, W> {
+    fn encode(&mut self, obj: &Header) {
+        ciborium::ser::into_writer( obj, &mut self.writer);
     }
 }
 
-impl Decoder<Header> for HeaderDecoder {
-    fn decode<R: Read>(&self, _reader: &mut R) -> Result<Box<Header>> {
-        todo!()
+impl <'a, W: Write>Encode<Transaction> for Encoder<'a, W> {
+    fn encode(&mut self, obj: &Transaction) {
+        ciborium::ser::into_writer( obj, &mut self.writer);
+    }
+}
+
+pub struct Decoder<'a, R: Read> {
+    reader: &'a mut R,
+}
+
+impl <'a, R: Read>Decoder<'a, R> {
+    pub fn new(reader: &'a mut R) -> Self {
+        Decoder {
+            reader
+        }
+    }
+}
+
+pub trait Decode<T> {
+    fn decode(&mut self) -> T;
+}
+
+impl <'a, R: Read>Decode<Header> for Decoder<'a, R> {
+    fn decode(&mut self) -> Header {
+        let header: Header = ciborium::de::from_reader(&mut self.reader).unwrap();
+        header
     }
 }

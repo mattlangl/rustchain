@@ -32,6 +32,8 @@ fn main() {
 
     let mut opts = ServerOpts {
         transports: Vec::new(),
+        block_time: todo!(),
+        key: todo!(),
     };
 
     opts.transports.push(Box::new(tr_local.clone()));

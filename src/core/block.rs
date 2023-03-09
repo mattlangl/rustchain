@@ -1,14 +1,15 @@
 use std::{io::{self, Write, Read, Cursor}};
 
 use chrono::Utc;
-use encode_decode_derive::{Encode, Decode};
 use p256::ecdsa::Signature;
+use serde_derive::{Serialize, Deserialize};
 use sha2::{Sha256, Digest};
+use crate::core::encoding::Encode;
 use crate::{types::hash::Hash, crypto::keypair::{PublicKey, PrivateKey}};
 
-use super::{transaction::{Transaction}, encoding::{Encoder, Decoder, Encode, Decode, HeaderEncoder}, hasher::{BlockHasher, Hasher}};
+use super::{transaction::{Transaction}, encoding::{Encoder}, hasher::{Hasher, Bytes}};
 
-#[derive(Debug, PartialEq, Eq, Encode, Decode, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize, Deserialize)]
 pub struct Header {
     pub version: u32,
     pub data: Hash,
@@ -17,19 +18,19 @@ pub struct Header {
     pub height: u32,
 }
 
-impl Header {
-    pub fn as_bytes(&self) -> Vec<u8> {
-        let encoder = HeaderEncoder::new();
-        let mut writer = Cursor::new(vec![]);
+impl Bytes for Header {
+    fn as_bytes(&self) -> Vec<u8> {
+        let writer = Cursor::new(vec![]);
+        let encoder = Encoder::new(&mut writer);
 
-        assert!(encoder.encode(&mut writer, self).is_ok());
+        encoder.encode(self);
         writer.set_position(0);
         writer.into_inner()
     }
 }
 
 
-#[derive(Debug, PartialEq, Decode, Encode, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Block {
     pub header: Header,
     pub transactions: Vec<Transaction>,
@@ -39,6 +40,16 @@ pub struct Block {
     pub prev_hash: Option<Hash>,
 }
 
+impl Bytes for Block {
+    fn as_bytes(&self) -> Vec<u8> {
+        let writer = Cursor::new(vec![]);
+        let encoder = Encoder::new(&mut writer);
+
+        encoder.encode(self);
+        writer.set_position(0);
+        writer.into_inner()
+    }
+}
 
 impl Block {
     pub fn new(header: Header, transactions: Vec<Transaction>) -> Block {
@@ -79,9 +90,9 @@ impl Block {
     }
     
 
-    pub fn hash(&mut self, hasher: Box<dyn Hasher<Header>>) -> Hash {
+    pub fn hash(&mut self, hasher: Hasher) -> Hash {
         if self.hash.is_none() {
-            self.hash = Some(hasher.hash(&self.header).expect("could not hash"));
+            self.hash = Some(hasher.hash(self.header).expect("could not hash"));
         }
         self.hash.unwrap()
     }

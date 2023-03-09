@@ -1,10 +1,11 @@
 use byteorder::{WriteBytesExt, ReadBytesExt};
 use rand::{thread_rng, Rng};
+use serde_derive::{Deserialize, Serialize};
 use std::{fmt, io};
 use std::io::{Write, Read};
 use std::iter::repeat;
 
-#[derive(Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct Hash([u8; 32]);
 
 impl Hash {

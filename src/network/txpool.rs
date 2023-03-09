@@ -3,14 +3,30 @@ use std::sync::{Arc, RwLock};
 use crate::core::{transaction::Transaction, hasher::TxHasher};
 use crate::types::hash::Hash;
 
+type TxMap = HashMap<Hash, Transaction>;
+pub struct TxMapSorter {
+    transactions: Vec<Transaction>
+}
+
+impl TxMapSorter {
+    fn new(map: TxMap) -> Self {
+        let mut txs = Vec::with_capacity(map.len());
+        for (_, tx) in map {
+            txs.push(tx);
+        }
+        //txs.sort_by(|a, b| );
+        TxMapSorter { transactions: txs }
+    }
+}
+
 pub struct TxPool {
-    transactions: Arc<RwLock<HashMap<Hash, Transaction>>>,
+    transactions: Arc<RwLock<TxMap>>,
 }
 
 impl TxPool {
     pub fn new() -> TxPool {
         TxPool {
-            transactions: Arc::new(HashMap::new().into()),
+            transactions: Arc::new(RwLock::new(TxMap::new())),
         }
     }
 

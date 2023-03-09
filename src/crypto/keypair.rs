@@ -7,6 +7,7 @@ use p256::{
     PublicKey as P256PublicKey, SecretKey,
     elliptic_curve::rand_core::OsRng
 };
+use serde::{Serialize, Deserialize};
 use sha2::{Digest, Sha256};
 
 use crate::types::address::Address;
@@ -37,7 +38,7 @@ impl PrivateKey {
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize)]
 pub struct PublicKey {
     key: P256PublicKey
 }
