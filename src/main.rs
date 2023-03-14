@@ -1,4 +1,5 @@
 use std::{time, thread};
+use crypto::keypair::PrivateKey;
 use simple_logger::SimpleLogger;
 use network::{local_transport::LocalTransport, transport::Transport, server::{ServerOpts, Server}};
 
@@ -32,8 +33,8 @@ fn main() {
 
     let mut opts = ServerOpts {
         transports: Vec::new(),
-        block_time: todo!(),
-        key: todo!(),
+        block_time: time::Duration::new(300, 0),
+        key: Some(PrivateKey::generate_key()),
     };
 
     opts.transports.push(Box::new(tr_local.clone()));

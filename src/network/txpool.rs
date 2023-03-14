@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
-use crate::core::{transaction::Transaction, hasher::TxHasher};
+use crate::core::hasher::Hasher;
+use crate::core::{transaction::Transaction};
 use crate::types::hash::Hash;
+use rand::Rng;
 
 type TxMap = HashMap<Hash, Transaction>;
 pub struct TxMapSorter {
@@ -9,12 +11,12 @@ pub struct TxMapSorter {
 }
 
 impl TxMapSorter {
-    fn new(map: TxMap) -> Self {
+    fn new(map: &TxMap) -> Self {
         let mut txs = Vec::with_capacity(map.len());
         for (_, tx) in map {
-            txs.push(tx);
+            txs.push(tx.clone());
         }
-        //txs.sort_by(|a, b| );
+        txs.sort_by(|a, b| a.seen.cmp(&b.seen));
         TxMapSorter { transactions: txs }
     }
 }
@@ -32,14 +34,14 @@ impl TxPool {
 
     pub fn add(&mut self, mut tx: Transaction) -> Result<(), ()> {
         let mut transactions = self.transactions.write().unwrap();
-        let hash = tx.hash(Box::new(TxHasher::new()));
+        let hash = tx.hash(Hasher::new());
         transactions.insert(hash, tx);
         Ok(())
     }
 
-    pub fn has(&self, hash: Hash) -> bool {
+    pub fn has(&self, hash: &Hash) -> bool {
         let transactions = self.transactions.read().unwrap();
-        transactions.contains_key(&hash)
+        transactions.contains_key(hash)
     }
 
     pub fn len(&self) -> usize {
@@ -52,6 +54,12 @@ impl TxPool {
 
         transactions.clear();
         Ok(())
+    }
+
+    fn get_transactions(&self) -> Vec<Transaction> {
+        let transactions = self.transactions.read().unwrap();
+        let sorter = TxMapSorter::new(&transactions);
+        return sorter.transactions;
     }
 }
 
@@ -82,5 +90,29 @@ mod tests {
         p.flush();
         assert_eq!(p.len(), 0);
     }
+
+    #[test]
+fn test_sort_transactions() {
+    let mut p = TxPool::new();
+    let tx_len = 1000;
+    let mut rng = rand::thread_rng();
+
+
+    for i in 0..tx_len {
+        let mut tx = Transaction::new(i.to_string().as_bytes().to_vec());
+        assert!(tx.is_ok());
+        let mut tx = tx.unwrap();
+        tx.set_seen(rng.gen::<i64>());
+        assert!(p.add(tx).is_ok());
+    }
+
+    assert_eq!(tx_len, p.len());
+
+    let txx = p.get_transactions();
+    println!("{:?}", txx);
+    for i in 0..txx.len()-1 {
+        assert!(txx[i].seen() < txx[i+1].seen());
+    }
+}
 }
 

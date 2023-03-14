@@ -16,8 +16,8 @@ pub struct Transaction {
 
 impl Bytes for Transaction {
     fn as_bytes(&self) -> Vec<u8> {
-        let writer = Cursor::new(vec![]);
-        let encoder = Encoder::new(&mut writer);
+        let mut writer = Cursor::new(vec![]);
+        let mut encoder = Encoder::new(&mut writer);
 
         encoder.encode(self);
         writer.set_position(0);
@@ -53,7 +53,7 @@ impl Transaction {
     pub fn hash(&mut self, hasher: Hasher) -> Hash 
     {
         if self.hash.is_none() {
-            self.hash = Some(hasher.hash(*self).expect("could not hash"));
+            self.hash = Some(hasher.hash(self).expect("could not hash"));
         }
         self.hash.unwrap()
     }

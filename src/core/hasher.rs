@@ -16,7 +16,7 @@ impl Hasher {
     pub fn new() -> Hasher {
         Hasher {}
     }
-    pub fn hash<B>(&self, obj: B) -> Result<Hash, String>
+    pub fn hash<B>(&self, obj: &B) -> Result<Hash, String>
     where B: Bytes
      {
         let mut hasher = Sha256::new();

@@ -20,8 +20,8 @@ pub struct Header {
 
 impl Bytes for Header {
     fn as_bytes(&self) -> Vec<u8> {
-        let writer = Cursor::new(vec![]);
-        let encoder = Encoder::new(&mut writer);
+        let mut writer = Cursor::new(vec![]);
+        let mut encoder = Encoder::new(&mut writer);
 
         encoder.encode(self);
         writer.set_position(0);
@@ -42,8 +42,8 @@ pub struct Block {
 
 impl Bytes for Block {
     fn as_bytes(&self) -> Vec<u8> {
-        let writer = Cursor::new(vec![]);
-        let encoder = Encoder::new(&mut writer);
+        let mut writer = Cursor::new(vec![]);
+        let mut encoder = Encoder::new(&mut writer);
 
         encoder.encode(self);
         writer.set_position(0);
@@ -92,7 +92,7 @@ impl Block {
 
     pub fn hash(&mut self, hasher: Hasher) -> Hash {
         if self.hash.is_none() {
-            self.hash = Some(hasher.hash(self.header).expect("could not hash"));
+            self.hash = Some(hasher.hash(&self.header).expect("could not hash"));
         }
         self.hash.unwrap()
     }
