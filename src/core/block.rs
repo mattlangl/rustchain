@@ -42,12 +42,11 @@ pub struct Block {
 
 impl Bytes for Block {
     fn as_bytes(&self) -> Vec<u8> {
-        let mut writer = Cursor::new(vec![]);
+        let mut writer = vec![];
         let mut encoder = Encoder::new(&mut writer);
 
         encoder.encode(self);
-        writer.set_position(0);
-        writer.into_inner()
+        writer
     }
 }
 

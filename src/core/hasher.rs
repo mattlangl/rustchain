@@ -2,7 +2,6 @@ use sha2::{Sha256, Digest};
 
 use crate::types::hash::Hash;
 
-use super::{block::{Block, Header}, encoding::{Encoder, Decoder}, transaction::Transaction};
 
 pub trait Bytes {
     fn as_bytes(&self) -> Vec<u8>;

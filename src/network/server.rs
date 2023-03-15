@@ -5,40 +5,49 @@ use std::time::{Duration, Instant};
 
 use log::info;
 
-use crate::core::hasher::TxHasher;
+use crate::core::hasher::{Hasher};
 use crate::core::transaction::Transaction;
 use crate::crypto::keypair::PrivateKey;
 
 use super::channel::Channel;
+use super::rpc::RPCDecodeFunc;
 use super::transport::{Transport, RPC};
 use super::txpool::TxPool;
 
+const default_time: std::time::Duration = Duration::new(5, 0);
 
 pub struct ServerOpts {
     pub transports: Vec<Box<dyn Transport>>,
-    block_time: Duration,
-    key: Option<PrivateKey>,
+    pub block_time: Option<Duration>,
+    pub key: Option<PrivateKey>,
+    pub rpc_decode_func: RPCDecodeFunc,
 }
 
-pub struct Server<> {
+pub struct Server {
     opts: ServerOpts,
     block_time: Duration,
     pool: TxPool,
     validator: bool,
     rpc_ch: Channel<RPC>,
     quit_ch: Channel<()>,
+    hasher: Hasher,
 }
 
 impl Server {
     pub fn new(opts: ServerOpts) -> Server {
+        let duration = match opts.block_time
+         {
+            Some(s) => s,
+            None => default_time,
+        };
         Server {
             rpc_ch: Channel::new(),
             quit_ch: Channel::new(),
-            block_time: opts.block_time.clone(),
+            block_time: duration,
             pool: TxPool::new(),
             validator: opts.key.is_some(),
             opts,
-
+            hasher: Hasher::new(),
         }
     }
 
@@ -73,14 +82,14 @@ impl Server {
         println!("Server shutdown");
     }
 
-    fn handle_transaction(&self, tx: &Transaction) -> Result<(), Box<dyn std::error::Error>> {
+    fn handle_transaction(&mut self, tx: &Transaction) -> Result<(), Box<dyn std::error::Error>> {
         if let Err(e) = tx.verify() {
             return Err(Box::new(e));
         }
 
-        let hash = tx.hash();
+        let hash = self.hasher.hash(tx).unwrap();
 
-        if self.pool.has(hash.clone()) {
+        if self.pool.has(&hash) {
             info!("transaction already in mempool: hash={}", hash);
             return Ok(());
         }

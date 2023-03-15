@@ -1,4 +1,3 @@
-use std::{io::{Write, Read, Cursor}};
 use p256::ecdsa::Signature;
 use serde::{Serialize, Deserialize};
 use crate::{types::hash::Hash, core::encoding::{Encode, Decode, Encoder, Decoder}, crypto::keypair::{PublicKey, PrivateKey}};
@@ -16,12 +15,11 @@ pub struct Transaction {
 
 impl Bytes for Transaction {
     fn as_bytes(&self) -> Vec<u8> {
-        let mut writer = Cursor::new(vec![]);
+        let mut writer = vec![];
         let mut encoder = Encoder::new(&mut writer);
 
         encoder.encode(self);
-        writer.set_position(0);
-        writer.into_inner()
+        writer
     }
 }
 

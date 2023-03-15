@@ -1,4 +1,8 @@
 use std::io::{Write, Read};
+use serde::Deserialize;
+
+use crate::network::rpc::Message;
+
 use super::{block::{Block, Header}, transaction::Transaction};
 
 pub struct Encoder<'a, W: Write> {
@@ -35,6 +39,12 @@ impl <'a, W: Write>Encode<Transaction> for Encoder<'a, W> {
     }
 }
 
+impl <'a, W: Write>Encode<Message> for Encoder<'a, W> {
+    fn encode(&mut self, obj: &Message) {
+        ciborium::ser::into_writer( obj, &mut self.writer);
+    }
+}
+
 pub struct Decoder<'a, R: Read> {
     reader: &'a mut R,
 }
@@ -47,13 +57,22 @@ impl <'a, R: Read>Decoder<'a, R> {
     }
 }
 
-pub trait Decode<T> {
+pub trait Decode<'de, T: Deserialize<'de>> {
     fn decode(&mut self) -> T;
 }
 
-impl <'a, R: Read>Decode<Header> for Decoder<'a, R> {
-    fn decode(&mut self) -> Header {
-        let header: Header = ciborium::de::from_reader(&mut self.reader).unwrap();
-        header
+
+impl <'de, R: Read, T: Deserialize<'de>>Decode<'de, T> for Decoder<'de, R> {
+    fn decode(&mut self) -> T {
+        let obj: T = ciborium::de::from_reader(&mut self.reader).unwrap();
+        obj
     }
 }
+
+
+// impl <'a, R: Read>Decode<Transaction> for Decoder<'a, R> {
+//     fn decode(&mut self) -> Transaction {
+//         let transaction = ciborium::de::from_reader(&mut self.reader).unwrap();
+//         transaction
+//     }
+// }
